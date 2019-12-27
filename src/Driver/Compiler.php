@@ -414,14 +414,14 @@ abstract class Compiler implements CompilerInterface
              * or closing braces.
              */
             if (is_string($context)) {
-                if ($context == '(') {
+                if ($context === '(') {
                     //New where group.
                     $activeGroup = true;
                 }
 
                 $statement .= ltrim("{$boolean} {$context} ");
 
-                if ($context == ')') {
+                if ($context === ')') {
                     //We don't need trailing space
                     $statement = rtrim($statement);
                 }
@@ -451,7 +451,7 @@ abstract class Compiler implements CompilerInterface
             //Value has to be prepared as well
             $placeholder = $this->compileValue($bindings, $value, true);
 
-            if ($operator == 'BETWEEN' || $operator == 'NOT BETWEEN') {
+            if ($operator === 'BETWEEN' || $operator === 'NOT BETWEEN') {
                 //Between statement has additional parameter
                 $right = $this->compileValue($bindings, $context[3], true);
 
@@ -494,7 +494,7 @@ abstract class Compiler implements CompilerInterface
             return $operator;
         }
 
-        if ($parameter->getType() == \PDO::PARAM_NULL) {
+        if ($parameter->getType() === \PDO::PARAM_NULL) {
             switch ($operator) {
                 case '=':
                     return 'IS';
@@ -503,7 +503,7 @@ abstract class Compiler implements CompilerInterface
             }
         }
 
-        if ($operator != '=' || is_scalar($parameter->getValue())) {
+        if ($operator !== '=' || is_scalar($parameter->getValue())) {
             // doing nothing for non equal operators
             return $operator;
         }
@@ -591,7 +591,7 @@ abstract class Compiler implements CompilerInterface
             return '';
         }
 
-        if ($prefix != "\n" && $prefix != ' ') {
+        if ($prefix !== "\n" && $prefix !== ' ') {
             $prefix .= ' ';
         }
 
