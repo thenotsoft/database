@@ -22,8 +22,6 @@ use Spiral\Database\Injection\Parameter;
  */
 class InsertQuery extends AbstractQuery
 {
-    public const QUERY_TYPE = Compiler::INSERT_QUERY;
-
     /**
      * @var string
      */

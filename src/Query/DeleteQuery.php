@@ -26,8 +26,6 @@ class DeleteQuery extends AbstractQuery
     use TokenTrait;
     use WhereTrait;
 
-    public const QUERY_TYPE = Compiler::DELETE_QUERY;
-
     /**
      * Every affect builder must be associated with specific table.
      *

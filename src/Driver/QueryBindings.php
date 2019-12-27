@@ -20,13 +20,22 @@ use Spiral\Database\Injection\ParameterInterface;
  */
 final class QueryBindings
 {
+    /**
+     * @var array
+     */
     private $parameters = [];
 
+    /**
+     * @return array
+     */
     public function getParameters(): array
     {
         return $this->parameters;
     }
 
+    /**
+     * @param ParameterInterface $parameter
+     */
     public function push(ParameterInterface $parameter): void
     {
         $this->parameters[] = $parameter;

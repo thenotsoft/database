@@ -11,33 +11,25 @@ declare(strict_types=1);
 
 namespace Spiral\Database\Query;
 
-use Spiral\Database\Driver\Compiler;
 use Spiral\Database\Driver\CompilerInterface;
 use Spiral\Database\Driver\QueryBindings;
 use Spiral\Database\Exception\BuilderException;
 use Spiral\Database\Exception\StatementException;
 use Spiral\Database\Injection\FragmentInterface;
-use Spiral\Database\Query\Traits\HavingTrait;
-use Spiral\Database\Query\Traits\JoinTrait;
-use Spiral\Database\Query\Traits\TokenTrait;
-use Spiral\Database\Query\Traits\WhereTrait;
+use Spiral\Database\Query\Traits;
 use Spiral\Database\StatementInterface;
-use Spiral\Pagination\PaginableInterface;
-use Spiral\Pagination\Traits\LimitsTrait;
 
 /**
  * SelectQuery extends AbstractSelect with ability to specify selection tables and perform UNION
  * of multiple select queries.
  */
-class SelectQuery extends AbstractQuery implements \Countable, \IteratorAggregate, PaginableInterface
+class SelectQuery extends AbstractQuery implements \Countable, \IteratorAggregate
 {
-    use TokenTrait;
-    use WhereTrait;
-    use HavingTrait;
-    use JoinTrait;
-    use LimitsTrait;
-
-    public const QUERY_TYPE = Compiler::SELECT_QUERY;
+    use Traits\TokenTrait;
+    use Traits\WhereTrait;
+    use Traits\HavingTrait;
+    use Traits\JoinTrait;
+    use Traits\LimitsTrait;
 
     /**
      * Sort directions.
@@ -94,6 +86,62 @@ class SelectQuery extends AbstractQuery implements \Countable, \IteratorAggregat
      * @var bool
      */
     protected $forUpdate = false;
+
+    /**
+     * @var int
+     */
+    private $limit = 0;
+
+    /**
+     * @var int
+     */
+    private $offset = 0;
+
+    /**
+     * Set selection limit. Attention, this limit value does not affect values set in paginator but
+     * only changes pagination window. Set to 0 to disable limiting.
+     *
+     * @param int $limit
+     *
+     * @return $this
+     */
+    public function limit(int $limit = 0)
+    {
+        $this->limit = $limit;
+
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getLimit(): int
+    {
+        return $this->limit;
+    }
+
+    /**
+     * Set selection offset. Attention, this value does not affect associated paginator but only
+     * changes pagination window.
+     *
+     * @param int $offset
+     *
+     * @return mixed
+     */
+    public function offset(int $offset = 0)
+    {
+        $this->offset = $offset;
+
+        return $this;
+    }
+
+    /**
+     * @return int
+     */
+    public function getOffset(): int
+    {
+        return $this->offset;
+    }
 
     /**
      * @param array $from    Initial set of table names.

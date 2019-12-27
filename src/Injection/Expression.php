@@ -26,7 +26,7 @@ use Spiral\Database\Driver\QueryBindings;
 final class Expression implements FragmentInterface
 {
     /** @var string */
-    private $expression = null;
+    private $expression;
 
     /**
      * @param string $statement
@@ -53,11 +53,6 @@ final class Expression implements FragmentInterface
         QueryBindings $bindings,
         CompilerInterface $compiler
     ): string {
-        if (empty($compiler)) {
-            //We might need to throw an exception here in some cases
-            return $this->expression;
-        }
-
         return $compiler->quote($bindings, $this->expression);
     }
 }

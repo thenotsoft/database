@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace Spiral\Database\Query;
 
-use Spiral\Database\Driver\Compiler;
 use Spiral\Database\Driver\CompilerInterface;
 use Spiral\Database\Driver\QueryBindings;
 use Spiral\Database\Exception\BuilderException;
@@ -25,8 +24,6 @@ class UpdateQuery extends AbstractQuery
 {
     use TokenTrait;
     use WhereTrait;
-
-    public const QUERY_TYPE = Compiler::UPDATE_QUERY;
 
     /**
      * Every affect builder must be associated with specific table.

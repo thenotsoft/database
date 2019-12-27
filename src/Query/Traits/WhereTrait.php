@@ -102,7 +102,7 @@ trait WhereTrait
             //Wrapping all values with ParameterInterface
             if (!$parameter instanceof ParameterInterface) {
                 $parameter = new Parameter($parameter, Parameter::DETECT_TYPE);
-            };
+            }
 
             return $parameter;
         };

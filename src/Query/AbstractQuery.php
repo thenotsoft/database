@@ -44,8 +44,7 @@ abstract class AbstractQuery implements BuilderInterface
         $bindings = new QueryBindings();
 
         try {
-            $queryString = $this->compile($bindings, $this->compiler);
-            ;
+            $queryString = $this->compile($bindings, $this->compiler);;
         } catch (\Exception $e) {
             $queryString = "[ERROR: {$e->getMessage()}]";
         }
@@ -78,9 +77,9 @@ abstract class AbstractQuery implements BuilderInterface
     /**
      * @param DriverInterface        $driver
      * @param CompilerInterface|null $compiler
-     * @return static
+     * @return $this
      */
-    public function withDriver(DriverInterface $driver, CompilerInterface $compiler = null)
+    public function withDriver(DriverInterface $driver, CompilerInterface $compiler = null): AbstractQuery
     {
         $query = clone $this;
         $query->driver = $driver;

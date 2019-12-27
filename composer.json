@@ -13,8 +13,7 @@
     "php": "^7.2",
     "ext-pdo": "*",
     "spiral/core": "^1.1",
-    "spiral/logger": "^1.1",
-    "spiral/pagination": "^2.2"
+    "spiral/logger": "^1.1"
   },
   "require-dev": {
     "spiral/debug": "^1.3",

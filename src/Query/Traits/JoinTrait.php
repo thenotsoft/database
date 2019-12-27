@@ -66,7 +66,7 @@ trait JoinTrait
      *
      * @var string
      */
-    private $lastJoin = null;
+    private $lastJoin;
 
     /**
      * Register new JOIN with specified type with set of on conditions (linking one table to
@@ -364,7 +364,7 @@ trait JoinTrait
      *
      * @return \Closure
      */
-    private function onWhereWrapper()
+    private function onWhereWrapper(): \Closure
     {
         return static function ($parameter) {
             if ($parameter instanceof FragmentInterface) {
@@ -378,7 +378,7 @@ trait JoinTrait
             //Wrapping all values with ParameterInterface
             if (!$parameter instanceof ParameterInterface) {
                 $parameter = new Parameter($parameter, Parameter::DETECT_TYPE);
-            };
+            }
 
             return $parameter;
         };
