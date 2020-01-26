@@ -35,21 +35,27 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
     /** @var string */
     private $name;
 
+    /** @var string|null */
+    private $namespace;
+
     /**
      * @param DatabaseInterface $database Parent DBAL database.
-     * @param string            $name     Table name without prefix.
+     * @param string $name Table name without prefix.
      */
     public function __construct(DatabaseInterface $database, string $name)
     {
+        [$namespace, $name] = $database->getDriver()->getSchemaHandler()->parseTableName($name);
+
         $this->name = $name;
         $this->database = $database;
+        $this->namespace = $namespace;
     }
 
     /**
      * Bypass call to SelectQuery builder.
      *
      * @param string $method
-     * @param array  $arguments
+     * @param array $arguments
      *
      * @return SelectQuery|mixed
      */
@@ -79,11 +85,33 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
     }
 
     /**
+     * @return string|null
+     */
+    public function getNamespaceName(): ?string
+    {
+        return $this->namespace;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getName(): string
     {
         return $this->name;
+    }
+
+    /**
+     * Return table name include namespace if it exists
+     *
+     * @return string
+     */
+    public function tableName(): string
+    {
+        if (null === $this->namespace) {
+            return $this->name;
+        }
+
+        return $this->namespace . '.' . $this->name;
     }
 
     /**
@@ -97,7 +125,7 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
             ->getDriver(DatabaseInterface::WRITE)
             ->getSchemaHandler()
             ->getSchema(
-                $this->name,
+                $this->tableName(),
                 $this->database->getPrefix()
             );
     }
@@ -127,7 +155,7 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
     public function insertOne(array $rowset = [])
     {
         return $this->database
-            ->insert($this->name)
+            ->insert($this->tableName())
             ->values($rowset)
             ->run();
     }
@@ -146,7 +174,7 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
     {
         //No return value
         $this->database
-            ->insert($this->name)
+            ->insert($this->tableName())
             ->columns($columns)
             ->values($rowsets)
             ->run();
@@ -160,7 +188,7 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
     public function insert(): InsertQuery
     {
         return $this->database
-            ->insert($this->name);
+            ->insert($this->tableName());
     }
 
     /**
@@ -174,7 +202,7 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
     {
         return $this->database
             ->select(func_num_args() ? func_get_args() : '*')
-            ->from($this->name);
+            ->from($this->tableName());
     }
 
     /**
@@ -189,7 +217,7 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
     public function delete(array $where = []): DeleteQuery
     {
         return $this->database
-            ->delete($this->name, $where);
+            ->delete($this->tableName(), $where);
     }
 
     /**
@@ -197,14 +225,14 @@ final class Table implements TableInterface, \IteratorAggregate, \Countable
      * can be scalar values, Parameter objects or even SQLFragments. Call ->run() to perform query.
      *
      * @param array $values Initial set of columns associated with values.
-     * @param array $where  Initial set of where rules specified as array.
+     * @param array $where Initial set of where rules specified as array.
      *
      * @return UpdateQuery
      */
     public function update(array $values = [], array $where = []): UpdateQuery
     {
         return $this->database
-            ->update($this->name, $values, $where);
+            ->update($this->tableName(), $values, $where);
     }
 
     /**

@@ -55,8 +55,8 @@ abstract class AbstractTable implements TableInterface, ElementInterface
     /**
      * Table states.
      */
-    public const STATUS_NEW              = 0;
-    public const STATUS_EXISTS           = 1;
+    public const STATUS_NEW = 0;
+    public const STATUS_EXISTS = 1;
     public const STATUS_DECLARED_DROPPED = 2;
 
     /**
@@ -96,21 +96,31 @@ abstract class AbstractTable implements TableInterface, ElementInterface
      */
     private $prefix;
 
+    /** @var string|null */
+    private $namespace;
+
     /**
      * @param DriverInterface $driver Parent driver.
-     * @param string          $name   Table name, must include table prefix.
-     * @param string          $prefix Database specific table prefix.
+     * @param string $name Table name, must include table prefix.
+     * @param string $prefix Database specific table prefix.
      */
     public function __construct(DriverInterface $driver, string $name, string $prefix)
     {
+        [$namespace, $name] = $driver->getSchemaHandler()->parseTableName($name);
+
         $this->driver = $driver;
         $this->prefix = $prefix;
+        $this->namespace = $namespace;
 
         //Initializing states
-        $this->initial = new State($this->prefix . $name);
-        $this->current = new State($this->prefix . $name);
+        $this->initial = new State($prefix . $name);
+        $this->current = new State($prefix . $name);
 
-        if ($this->driver->getSchemaHandler()->hasTable($this->getName())) {
+        $tableName = null === $this->namespace
+            ? $this->getName()
+            : $this->namespace . '.' . $this->getName();
+
+        if ($this->driver->getSchemaHandler()->hasTable($tableName)) {
             $this->status = self::STATUS_EXISTS;
         }
 
@@ -142,7 +152,7 @@ abstract class AbstractTable implements TableInterface, ElementInterface
      * $table->text("some_column");
      *
      * @param string $type
-     * @param array  $arguments Type specific parameters.
+     * @param array $arguments Type specific parameters.
      * @return AbstractColumn
      */
     public function __call(string $type, array $arguments)
@@ -176,11 +186,12 @@ abstract class AbstractTable implements TableInterface, ElementInterface
     public function __debugInfo()
     {
         return [
-            'status'      => $this->status,
-            'name'        => $this->getName(),
+            'status' => $this->status,
+            'name' => $this->getName(),
+            'namespace' => $this->getNamespaceName(),
             'primaryKeys' => $this->getPrimaryKeys(),
-            'columns'     => array_values($this->getColumns()),
-            'indexes'     => array_values($this->getIndexes()),
+            'columns' => array_values($this->getColumns()),
+            'indexes' => array_values($this->getIndexes()),
             'foreignKeys' => array_values($this->getForeignKeys()),
         ];
     }
@@ -251,6 +262,14 @@ abstract class AbstractTable implements TableInterface, ElementInterface
     public function getName(): string
     {
         return $this->current->getName();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getNamespaceName(): ?string
+    {
+        return $this->namespace;
     }
 
     /**
@@ -510,8 +529,8 @@ abstract class AbstractTable implements TableInterface, ElementInterface
     /**
      * Rename index (only if index exists).
      *
-     * @param array  $columns Index forming columns.
-     * @param string $name    New index name.
+     * @param array $columns Index forming columns.
+     * @param string $name New index name.
      * @return self
      *
      * @throws SchemaException
@@ -647,11 +666,11 @@ abstract class AbstractTable implements TableInterface, ElementInterface
      * does not exist it must be created. If table declared as dropped it will be removed from
      * the database.
      *
-     * @param int  $operation Operation to be performed while table being saved. In some cases
+     * @param int $operation Operation to be performed while table being saved. In some cases
      *                        (when multiple tables are being updated) it is reasonable to drop
      *                        foreign keys and indexes prior to dropping related columns. See sync
      *                        bus class to get more details.
-     * @param bool $reset     When true schema will be marked as synced.
+     * @param bool $reset When true schema will be marked as synced.
      *
      * @throws HandlerException
      * @throws SchemaException
@@ -880,16 +899,21 @@ abstract class AbstractTable implements TableInterface, ElementInterface
      * Generate unique name for indexes and foreign keys.
      *
      * @param string $type
-     * @param array  $columns
+     * @param array $columns
      *
      * @return string
      */
     protected function createIdentifier(string $type, array $columns): string
     {
-        $name = $this->getName()
-            . '_' . $type
-            . '_' . implode('_', $columns)
-            . '_' . uniqid();
+        $name = sprintf(
+            '%s_%s_%s_%s',
+            $this->getNamespaceName() === null
+                ? $this->getName()
+                : $this->getNamespaceName() . '_' . $this->getName(),
+            $type,
+            implode('_', $columns),
+            uniqid()
+        );
 
         if (strlen($name) > 64) {
             //Many DBMS has limitations on identifier length

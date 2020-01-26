@@ -117,10 +117,10 @@ class PostgresTable extends AbstractTable
      */
     protected function fetchIndexes(bool $all = false): array
     {
-        $query = "SELECT * FROM pg_indexes WHERE schemaname = 'public' AND tablename = ?";
+        $query = "SELECT * FROM pg_indexes WHERE schemaname = ? AND tablename = ?";
 
         $result = [];
-        foreach ($this->driver->query($query, [$this->getName()]) as $schema) {
+        foreach ($this->driver->query($query, [$this->getNamespaceName() ?? 'public', $this->getName()]) as $schema) {
             $conType = $this->driver->query(
                 'SELECT contype FROM pg_constraint WHERE conname = ?',
                 [$schema['indexname']]
@@ -185,9 +185,9 @@ class PostgresTable extends AbstractTable
      */
     protected function fetchPrimaryKeys(): array
     {
-        $query = "SELECT * FROM pg_indexes WHERE schemaname = 'public' AND tablename = ?";
+        $query = "SELECT * FROM pg_indexes WHERE schemaname = ? AND tablename = ?";
 
-        foreach ($this->driver->query($query, [$this->getName()]) as $schema) {
+        foreach ($this->driver->query($query, [$this->getNamespaceName() ?? 'public', $this->getName()]) as $schema) {
             $conType = $this->driver->query(
                 'SELECT contype FROM pg_constraint WHERE conname = ?',
                 [$schema['indexname']]

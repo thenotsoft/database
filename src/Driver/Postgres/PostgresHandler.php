@@ -20,6 +20,9 @@ use Spiral\Database\Schema\AbstractTable;
 
 class PostgresHandler extends Handler
 {
+    /** @var array */
+    private $parsedTableNames = [];
+
     /**
      * @inheritDoc
      */
@@ -33,12 +36,12 @@ class PostgresHandler extends Handler
      */
     public function getTableNames(): array
     {
-        $query = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'
-          AND table_type = 'BASE TABLE'";
+        $query = "SELECT table_schema, table_name FROM information_schema.tables WHERE table_catalog = ?
+          AND table_type = 'BASE TABLE' AND table_schema !~ '^pg_.*' AND table_schema != 'information_schema'";
 
         $tables = [];
-        foreach ($this->driver->query($query) as $row) {
-            $tables[] = $row['table_name'];
+        foreach ($this->driver->query($query, [$this->driver->getSource()]) as $row) {
+            $tables[] = [$row['table_schema'], $row['table_name']];
         }
 
         return $tables;
@@ -49,11 +52,55 @@ class PostgresHandler extends Handler
      */
     public function hasTable(string $name): bool
     {
+        [$namespace, $tableName] = $this->parseTableName($name);
+
         return (bool)$this->driver->query(
-            "SELECT COUNT(table_name) FROM information_schema.tables WHERE table_schema = 'public'
+            "SELECT COUNT(table_name) FROM information_schema.tables WHERE table_schema = ?
           AND table_type = 'BASE TABLE' AND table_name = ?",
-            [$name]
+            [$namespace ?? 'public', $tableName]
         )->fetchColumn();
+    }
+
+    /**
+     * Return database available namespaces
+     *
+     * @return array
+     */
+    public function getNamespaces(): array
+    {
+        return array_map(function ($row) {
+            return $row['nspname'];
+        }, $this->driver->query(
+            'SELECT nspname FROM pg_namespace WHERE nspname !~ \'^pg_.*\' AND nspname != \'information_schema\';'
+        )->fetchAll());
+    }
+
+    /**
+     * @param string $table
+     * @return bool
+     */
+    public function tableContainsNamespace(string $table): bool
+    {
+        return strpos($table, '.') !== false;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function parseTableName($table): array
+    {
+        if (isset($this->parsedTableNames[$table])) {
+            return $this->parsedTableNames[$table];
+        }
+
+        if ($this->tableContainsNamespace($table)) {
+            [$namespace, $tableName] = explode('.', $table, 2);
+            if (in_array($namespace, $this->driver->getNamespaces(), true)) {
+                return $this->parsedTableNames[$table] = [$namespace, $tableName];
+            }
+        }
+
+        return $this->parsedTableNames[$table] = [null, $table];
     }
 
     /**
@@ -61,9 +108,7 @@ class PostgresHandler extends Handler
      */
     public function eraseTable(AbstractTable $table): void
     {
-        $this->driver->execute(
-            "TRUNCATE TABLE {$this->driver->identifier($table->getName())}"
-        );
+        $this->driver->execute("TRUNCATE TABLE {$this->identify($table)}");
     }
 
     /**
@@ -75,7 +120,8 @@ class PostgresHandler extends Handler
         AbstractTable $table,
         AbstractColumn $initial,
         AbstractColumn $column
-    ): void {
+    ): void
+    {
         if (!$initial instanceof PostgresColumn || !$column instanceof PostgresColumn) {
             throw new SchemaException('Postgres handler can work only with Postgres columns');
         }
@@ -118,7 +164,7 @@ class PostgresHandler extends Handler
     }
 
     /**
-     * @param AbstractTable  $table
+     * @param AbstractTable $table
      * @param AbstractColumn $initial
      * @param AbstractColumn $column
      */
@@ -126,7 +172,8 @@ class PostgresHandler extends Handler
         AbstractTable $table,
         AbstractColumn $initial,
         AbstractColumn $column
-    ): void {
+    ): void
+    {
         $statement = sprintf(
             'ALTER TABLE %s RENAME COLUMN %s TO %s',
             $this->identify($table),

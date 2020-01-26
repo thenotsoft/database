@@ -35,6 +35,11 @@ class PostgresDriver extends Driver
     private $primaryKeys = [];
 
     /**
+     * @var array|null
+     */
+    private $namespaces;
+
+    /**
      * @param array $options
      */
     public function __construct(array $options)
@@ -96,6 +101,18 @@ class PostgresDriver extends Driver
         }
 
         return $this->primaryKeys[$name];
+    }
+
+    /**
+     * @return array
+     */
+    public function getNamespaces(): array
+    {
+        if (null === $this->namespaces) {
+            $this->namespaces = $this->getSchemaHandler()->getNamespaces();
+        }
+
+        return $this->namespaces;
     }
 
     /**

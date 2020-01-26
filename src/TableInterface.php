@@ -24,6 +24,13 @@ interface TableInterface
     public function exists(): bool;
 
     /**
+     * Return table namespace
+     *
+     * @return string|null
+     */
+    public function getNamespaceName(): ?string;
+
+    /**
      * Store specific table name (with included prefix).
      *
      * @return string

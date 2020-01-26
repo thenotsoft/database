@@ -29,9 +29,9 @@ final class Database implements DatabaseInterface, InjectableInterface
     public const INJECTOR = DatabaseManager::class;
 
     // Isolation levels for transactions
-    public const ISOLATION_SERIALIZABLE     = DriverInterface::ISOLATION_SERIALIZABLE;
-    public const ISOLATION_REPEATABLE_READ  = DriverInterface::ISOLATION_REPEATABLE_READ;
-    public const ISOLATION_READ_COMMITTED   = DriverInterface::ISOLATION_READ_COMMITTED;
+    public const ISOLATION_SERIALIZABLE = DriverInterface::ISOLATION_SERIALIZABLE;
+    public const ISOLATION_REPEATABLE_READ = DriverInterface::ISOLATION_REPEATABLE_READ;
+    public const ISOLATION_READ_COMMITTED = DriverInterface::ISOLATION_READ_COMMITTED;
     public const ISOLATION_READ_UNCOMMITTED = DriverInterface::ISOLATION_READ_UNCOMMITTED;
 
     /** @var string */
@@ -47,10 +47,10 @@ final class Database implements DatabaseInterface, InjectableInterface
     private $readDriver;
 
     /**
-     * @param string               $name       Internal database name/id.
-     * @param string               $prefix     Default database table prefix, will be used for all
+     * @param string $name Internal database name/id.
+     * @param string $prefix Default database table prefix, will be used for all
      *                                         table identifiers.
-     * @param DriverInterface      $driver     Driver instance responsible for database connection.
+     * @param DriverInterface $driver Driver instance responsible for database connection.
      * @param DriverInterface|null $readDriver Read-only driver connection.
      */
     public function __construct(
@@ -58,7 +58,8 @@ final class Database implements DatabaseInterface, InjectableInterface
         string $prefix,
         DriverInterface $driver,
         DriverInterface $readDriver = null
-    ) {
+    )
+    {
         $this->name = $name;
         $this->prefix = $prefix;
         $this->driver = $driver;
@@ -133,7 +134,11 @@ final class Database implements DatabaseInterface, InjectableInterface
      */
     public function hasTable(string $name): bool
     {
-        return $this->getDriver()->getSchemaHandler()->hasTable($this->prefix . $name);
+        $schemaHandler = $this->getDriver()->getSchemaHandler();
+
+        [$namespace, $name] = $schemaHandler->parseTableName($name);
+
+        return $schemaHandler->hasTable(!empty($namespace) ? $namespace . '.' : '' . $this->prefix . $name);
     }
 
     /**
@@ -147,12 +152,19 @@ final class Database implements DatabaseInterface, InjectableInterface
 
         $result = [];
         foreach ($schemaHandler->getTableNames() as $table) {
+            if (is_array($table)) {
+                [$namespace, $table] = $table;
+            }
+
             if ($this->prefix && strpos($table, $this->prefix) !== 0) {
                 // logical partitioning
                 continue;
             }
 
-            $result[] = new Table($this, substr($table, strlen($this->prefix)));
+            $result[] = new Table(
+                $this,
+                !empty($namespace) ? $namespace . '.' : '' . substr($table, strlen($this->prefix))
+            );
         }
 
         return $result;
@@ -240,7 +252,8 @@ final class Database implements DatabaseInterface, InjectableInterface
     public function transaction(
         callable $callback,
         string $isolationLevel = null
-    ) {
+    )
+    {
         $this->begin($isolationLevel);
 
         try {

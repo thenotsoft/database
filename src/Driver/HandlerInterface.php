@@ -23,32 +23,32 @@ use Spiral\Database\Schema\AbstractTable;
 interface HandlerInterface
 {
     //Foreign key modification behaviours
-    public const DROP_FOREIGN_KEYS   = 0b000000001;
+    public const DROP_FOREIGN_KEYS = 0b000000001;
     public const CREATE_FOREIGN_KEYS = 0b000000010;
-    public const ALTER_FOREIGN_KEYS  = 0b000000100;
+    public const ALTER_FOREIGN_KEYS = 0b000000100;
 
     //All foreign keys related operations
     public const DO_FOREIGN_KEYS = self::DROP_FOREIGN_KEYS | self::ALTER_FOREIGN_KEYS | self::CREATE_FOREIGN_KEYS;
 
     //Column modification behaviours
-    public const DROP_COLUMNS   = 0b000001000;
+    public const DROP_COLUMNS = 0b000001000;
     public const CREATE_COLUMNS = 0b000010000;
-    public const ALTER_COLUMNS  = 0b000100000;
+    public const ALTER_COLUMNS = 0b000100000;
 
     //All columns related operations
     public const DO_COLUMNS = self::DROP_COLUMNS | self::ALTER_COLUMNS | self::CREATE_COLUMNS;
 
     //Index modification behaviours
-    public const DROP_INDEXES   = 0b001000000;
+    public const DROP_INDEXES = 0b001000000;
     public const CREATE_INDEXES = 0b010000000;
-    public const ALTER_INDEXES  = 0b100000000;
+    public const ALTER_INDEXES = 0b100000000;
 
     //All index related operations
     public const DO_INDEXES = self::DROP_INDEXES | self::ALTER_INDEXES | self::CREATE_INDEXES;
 
     //General purpose schema operations
     public const DO_RENAME = 0b10000000000;
-    public const DO_DROP   = 0b01000000000;
+    public const DO_DROP = 0b01000000000;
 
     //All operations
     public const DO_ALL = self::DO_FOREIGN_KEYS | self::DO_INDEXES | self::DO_COLUMNS | self::DO_DROP | self::DO_RENAME;
@@ -75,9 +75,26 @@ interface HandlerInterface
     public function hasTable(string $table): bool;
 
     /**
+     * Checks if the name contains a namespace
+     *
+     * @param string $table
+     * @return bool
+     */
+    public function tableContainsNamespace(string $table): bool;
+
+    /**
+     * Parsing the table name and returning an array.
+     * First argument is the namespace or null if has't, second is the delimiter and third is a table name
+     *
+     * @param string $table
+     * @return array
+     */
+    public function parseTableName(string $table): array;
+
+    /**
      * Get or create table schema.
      *
-     * @param string      $table
+     * @param string $table
      * @param string|null $prefix
      * @return AbstractTable
      *
@@ -113,7 +130,7 @@ interface HandlerInterface
      * Sync given table schema.
      *
      * @param AbstractTable $table
-     * @param int           $operation See behaviour constants.
+     * @param int $operation See behaviour constants.
      */
     public function syncTable(AbstractTable $table, int $operation = self::DO_ALL): void;
 
@@ -130,7 +147,7 @@ interface HandlerInterface
     /**
      * Driver specific column add command.
      *
-     * @param AbstractTable  $table
+     * @param AbstractTable $table
      * @param AbstractColumn $column
      *
      * @throws HandlerException
@@ -140,7 +157,7 @@ interface HandlerInterface
     /**
      * Driver specific column remove (drop) command.
      *
-     * @param AbstractTable  $table
+     * @param AbstractTable $table
      * @param AbstractColumn $column
      */
     public function dropColumn(AbstractTable $table, AbstractColumn $column): void;
@@ -148,7 +165,7 @@ interface HandlerInterface
     /**
      * Driver specific column alter command.
      *
-     * @param AbstractTable  $table
+     * @param AbstractTable $table
      * @param AbstractColumn $initial
      * @param AbstractColumn $column
      *
@@ -198,7 +215,7 @@ interface HandlerInterface
     /**
      * Driver specific foreign key adding command.
      *
-     * @param AbstractTable      $table
+     * @param AbstractTable $table
      * @param AbstractForeignKey $foreignKey
      *
      * @throws HandlerException
@@ -208,7 +225,7 @@ interface HandlerInterface
     /**
      * Driver specific foreign key remove (drop) command.
      *
-     * @param AbstractTable      $table
+     * @param AbstractTable $table
      * @param AbstractForeignKey $foreignKey
      *
      * @throws HandlerException
@@ -218,7 +235,7 @@ interface HandlerInterface
     /**
      * Driver specific foreign key alter command, by default it will remove and add foreign key.
      *
-     * @param AbstractTable      $table
+     * @param AbstractTable $table
      * @param AbstractForeignKey $initial
      * @param AbstractForeignKey $foreignKey
      *
@@ -234,7 +251,7 @@ interface HandlerInterface
      * Drop column constraint using it's name.
      *
      * @param AbstractTable $table
-     * @param string        $constraint
+     * @param string $constraint
      *
      * @throws HandlerException
      */
