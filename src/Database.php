@@ -58,8 +58,7 @@ final class Database implements DatabaseInterface, InjectableInterface
         string $prefix,
         DriverInterface $driver,
         DriverInterface $readDriver = null
-    )
-    {
+    ) {
         $this->name = $name;
         $this->prefix = $prefix;
         $this->driver = $driver;
@@ -163,7 +162,7 @@ final class Database implements DatabaseInterface, InjectableInterface
 
             $result[] = new Table(
                 $this,
-                !empty($namespace) ? $namespace . '.' : '' . substr($table, strlen($this->prefix))
+                (!empty($namespace) ? $namespace . '.' : '') . substr($table, strlen($this->prefix))
             );
         }
 
@@ -252,8 +251,7 @@ final class Database implements DatabaseInterface, InjectableInterface
     public function transaction(
         callable $callback,
         string $isolationLevel = null
-    )
-    {
+    ) {
         $this->begin($isolationLevel);
 
         try {
