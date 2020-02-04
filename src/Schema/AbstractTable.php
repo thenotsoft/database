@@ -13,6 +13,7 @@ namespace Spiral\Database\Schema;
 
 use Spiral\Database\Driver\DriverInterface;
 use Spiral\Database\Driver\HandlerInterface;
+use Spiral\Database\Exception\DriverException;
 use Spiral\Database\Exception\HandlerException;
 use Spiral\Database\Exception\SchemaException;
 use Spiral\Database\TableInterface;
@@ -434,9 +435,35 @@ abstract class AbstractTable implements TableInterface, ElementInterface
      * @return AbstractIndex
      *
      * @throws SchemaException
+     * @throws DriverException
      */
     public function index(array $columns): AbstractIndex
     {
+        $original = $columns;
+        $normalized = [];
+        $sort = [];
+
+        foreach ($columns as $expression) {
+            [$column, $order] = AbstractIndex::parseColumn($expression);
+
+            // If expression like 'column DESC' was passed, we cast it to 'column' => 'DESC'
+            if ($order !== null) {
+                if (!$this->isIndexColumnSortingSupported()) {
+                    throw new DriverException(
+                        sprintf(
+                            'Failed to create index with `%s` on `%s`, column sorting is not supported',
+                            $expression,
+                            $this->getName()
+                        )
+                    );
+                }
+                $sort[$column] = $order;
+            }
+
+            $normalized[] = $column;
+        }
+        $columns = $normalized;
+
         foreach ($columns as $column) {
             if (!$this->hasColumn($column)) {
                 throw new SchemaException(
@@ -445,18 +472,18 @@ abstract class AbstractTable implements TableInterface, ElementInterface
             }
         }
 
-        if ($this->hasIndex($columns)) {
-            return $this->current->findIndex($columns);
+        if ($this->hasIndex($original)) {
+            return $this->current->findIndex($original);
         }
 
-        if ($this->initial->hasIndex($columns)) {
+        if ($this->initial->hasIndex($original)) {
             //Let's ensure that index name is always stays synced (not regenerated)
-            $name = $this->initial->findIndex($columns)->getName();
+            $name = $this->initial->findIndex($original)->getName();
         } else {
-            $name = $this->createIdentifier('index', $columns);
+            $name = $this->createIdentifier('index', $original);
         }
 
-        $index = $this->createIndex($name)->columns($columns);
+        $index = $this->createIndex($name)->columns($columns)->sort($sort);
 
         //Adding to current schema
         $this->current->registerIndex($index);
@@ -713,6 +740,18 @@ abstract class AbstractTable implements TableInterface, ElementInterface
     }
 
     /**
+     * Sanitize column expression for index name
+     *
+     * @param mixed $column
+     *
+     * @return string
+     */
+    public static function sanitizeColumnExpression($column)
+    {
+        return preg_replace(['/\(/', '/\)/', '/ /'], '__', strtolower($column));
+    }
+
+    /**
      * Check if table schema has been modified since synchronization.
      *
      * @return bool
@@ -840,6 +879,11 @@ abstract class AbstractTable implements TableInterface, ElementInterface
         //DBMS specific initialization can be placed here
     }
 
+    protected function isIndexColumnSortingSupported(): bool
+    {
+        return true;
+    }
+
     /**
      * Fetch index declarations from database.
      *
@@ -905,13 +949,19 @@ abstract class AbstractTable implements TableInterface, ElementInterface
      */
     protected function createIdentifier(string $type, array $columns): string
     {
+        // Sanitize columns in case they have expressions
+        $sanitized = [];
+        foreach ($columns as $column) {
+            $sanitized[] = self::sanitizeColumnExpression($column);
+        }
+
         $name = sprintf(
             '%s_%s_%s_%s',
             $this->getNamespaceName() === null
                 ? $this->getName()
                 : $this->getNamespaceName() . '_' . $this->getName(),
             $type,
-            implode('_', $columns),
+            implode('_', $sanitized),
             uniqid()
         );
 
