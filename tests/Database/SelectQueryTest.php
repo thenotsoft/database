@@ -2356,4 +2356,78 @@ WHERE {name} = \'Antony\' AND {id} IN (SELECT{id}FROM {other}WHERE {x} = 123)',
             $select
         );
     }
+
+    public function testSelectWithParametricExpression(): void
+    {
+        $select = $this->database->select()
+            ->from(['users'])
+            ->where('name', 'Antony')
+            ->orWhere(new Expression('RANGE(balance, price) = ?', 10));
+
+        $this->assertSameQuery(
+            'SELECT * FROM {users} WHERE {name} = ? OR RANGE({balance}, {price}) = ?',
+            $select
+        );
+
+        $this->assertSameParameters(
+            [
+                'Antony',
+                10
+            ],
+            $select
+        );
+    }
+
+    public function testSelectWithParametricExpression2(): void
+    {
+        $select = $this->database->select()
+            ->from(['users'])
+            ->where(
+                new Expression('RANGE(?, ?)', 101, 102),
+                '&&',
+                new Expression('RANGE(?, ?)', 103, 104)
+            );
+
+        $this->assertSameQuery(
+            'SELECT * FROM {users} WHERE RANGE(?, ?) && RANGE(?, ?)',
+            $select
+        );
+
+        $this->assertSameParameters(
+            [
+                101,
+                102,
+                103,
+                104
+            ],
+            $select
+        );
+    }
+
+    public function testSelectWithParametricExpression3(): void
+    {
+        $select = $this->database->select()
+            ->from(['users'])
+            ->where(
+                new Expression('RANGE(?, ?)', 101, 102),
+                new Expression('RANGE(name, ?)', 600),
+                new Expression('RANGE(?, ?)', 103, 104)
+            );
+
+        $this->assertSameQuery(
+            'SELECT * FROM {users} WHERE RANGE(?, ?) RANGE({name}, ?) RANGE(?, ?)',
+            $select
+        );
+
+        $this->assertSameParameters(
+            [
+                101,
+                102,
+                600,
+                103,
+                104
+            ],
+            $select
+        );
+    }
 }
