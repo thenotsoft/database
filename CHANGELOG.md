@@ -1,5 +1,37 @@
-CHANGELOG for 0.9.0 RC
+CHANGELOG
 ======================
+
+v2.7.13 (04.04.2020)
+-----
+- improved legacy config resolution (invalid `options` parsing)
+
+v2.7.12 (31.03.2020)
+-----
+- default `json` type for Postgres fallbacks to text to unify with other drivers
+
+v2.7.11 (12.03.2020)
+-----
+- Add PostgreSQL `timestamptz` mapping for `timestamp with time zone` by @rauanmayemir
+
+v2.7.10 (18.02.2020)
+-----
+- catch postgres EOF exceptions on amazon as connection exception
+
+v2.7.9 (18.02.2020)
+-----
+- added the ability to pass parameters into Expression in operators and values
+
+v2.7.8 (18.02.2020)
+-----
+- added the ability to pass parameters into Expression
+
+v2.7.7 (11.02.2020)
+-----
+- minor refactor in PostgresInsertQuery
+
+v2.7.6 (07.02.2020)
+-----
+- added the support to force the returning key in Postgres insert queries
 
 v2.7.5 (03.02.2020)
 -----
